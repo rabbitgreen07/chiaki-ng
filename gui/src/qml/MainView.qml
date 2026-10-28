@@ -65,6 +65,10 @@ Pane {
             root.showManualHostDialog();
             event.accepted = true;
             break;
+        case Qt.Key_F3:
+            root.showQuickSetupDialog();
+            event.accepted = true;
+            break;
         }
     }
 
@@ -159,6 +163,16 @@ Pane {
                     sourceSize: Qt.size(width, height)
                     source: "qrc:/icons/r3.svg"
                 }
+            }
+
+            Button {
+                Layout.fillHeight: true
+                Layout.preferredWidth: 220
+                flat: true
+                text: qsTr("Quick Setup")
+                focusPolicy: Qt.NoFocus
+                onClicked: root.showQuickSetupDialog()
+                Material.roundedScale: Material.SmallScale
             }
 
             Button {

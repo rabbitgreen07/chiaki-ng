@@ -303,6 +303,49 @@ Item {
         }
     }
 
+    Rectangle {
+        id: screenshotToast
+        property string message: ""
+        anchors {
+            horizontalCenter: parent.horizontalCenter
+            top: parent.top
+            topMargin: 40
+        }
+        width: screenshotToastLabel.implicitWidth + 40
+        height: screenshotToastLabel.implicitHeight + 24
+        radius: 12
+        color: Qt.rgba(0, 0, 0, 0.75)
+        opacity: screenshotToastTimer.running ? 1.0 : 0.0
+        visible: opacity > 0
+        z: 10
+        Behavior on opacity { NumberAnimation { duration: 250 } }
+
+        Label {
+            id: screenshotToastLabel
+            anchors.centerIn: parent
+            text: screenshotToast.message
+            font.pixelSize: 18
+            color: "white"
+        }
+
+        Timer {
+            id: screenshotToastTimer
+            interval: 2500
+        }
+
+        function show(text) {
+            message = text;
+            screenshotToastTimer.restart();
+            Chiaki.window.requestOverlayUpdate();
+        }
+
+        Connections {
+            target: Chiaki.window
+            function onScreenshotSaved(path) { screenshotToast.show(qsTr("Screenshot saved: %1").arg(path)); }
+            function onScreenshotFailed(reason) { screenshotToast.show(qsTr("Screenshot failed: %1").arg(reason)); }
+        }
+    }
+
     Component {
         id: streamStatsContent
         Item {
@@ -544,8 +587,21 @@ Item {
                 checked: Chiaki.session && !Chiaki.session.muted
                 onToggled: Chiaki.session.muted = !Chiaki.session.muted
                 KeyNavigation.left: volumeSlider
-                KeyNavigation.right: zoomButton
+                KeyNavigation.right: screenshotButton
                 Keys.onReturnPressed: toggled()
+                Keys.onEscapePressed: menuController.close()
+            }
+
+            ToolButton {
+                id: screenshotButton
+                Layout.rightMargin: 20
+                text: qsTr("Screenshot")
+                padding: 10
+                enabled: Chiaki.session && Chiaki.session.connected
+                onClicked: Chiaki.window.takeScreenshot()
+                KeyNavigation.left: muteButton
+                KeyNavigation.right: zoomButton
+                Keys.onReturnPressed: clicked()
                 Keys.onEscapePressed: menuController.close()
             }
 
@@ -556,7 +612,7 @@ Item {
                 checkable: true
                 checked: Chiaki.window.videoMode == ChiakiWindow.VideoMode.Zoom
                 onToggled: Chiaki.window.videoMode = Chiaki.window.videoMode == ChiakiWindow.VideoMode.Zoom ? ChiakiWindow.VideoMode.Normal : ChiakiWindow.VideoMode.Zoom
-                KeyNavigation.left: muteButton
+                KeyNavigation.left: screenshotButton
                 KeyNavigation.right: {
                     if(Chiaki.window.videoMode == ChiakiWindow.VideoMode.Zoom)
                         zoomFactor

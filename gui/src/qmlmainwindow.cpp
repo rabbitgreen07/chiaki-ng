@@ -4,6 +4,7 @@
 #include "chiaki/log.h"
 #include "chiaki/time.h"
 #include "streamsession.h"
+#include "screenshot.h"
 
 #include <qpa/qplatformnativeinterface.h>
 
@@ -48,6 +49,9 @@ extern "C" {
 #include <QQuickRenderControl>
 #include <QQuickGraphicsDevice>
 #include <QTimer>
+#include <QDateTime>
+#include <QDir>
+#include <QThreadPool>
 #include <QWaitCondition>
 #include <QProcess>
 #include <QProcessEnvironment>
@@ -3007,6 +3011,9 @@ void QmlMainWindow::presentFrame(ChiakiFfmpegFrame frame, int32_t frames_lost, q
 
     if (!frame.frame)
         return;
+
+    if (screenshot_requested.loadRelaxed() && screenshot_requested.testAndSetOrdered(1, 0))
+        captureScreenshot(frame.frame);
 
     if (bypass_frame_queue) {
         {
@@ -7508,10 +7515,68 @@ void QmlMainWindow::render()
 
 }
 
+void QmlMainWindow::takeScreenshot()
+{
+    if (!session || !has_video) {
+        emit screenshotFailed(tr("No video to capture yet"));
+        return;
+    }
+    screenshot_requested.storeRelease(1);
+}
+
+void QmlMainWindow::captureScreenshot(const AVFrame *frame)
+{
+    // Clone holds a reference to the (possibly GPU) frame so the conversion can
+    // run off the decode/present path without stalling the stream.
+    AVFrame *copy = av_frame_clone(frame);
+    if (!copy) {
+        emit screenshotFailed(tr("Out of memory"));
+        return;
+    }
+    QPointer<QmlMainWindow> self(this);
+    QThreadPool::globalInstance()->start([self, copy]() mutable {
+        QString error;
+        QImage image = ChiakiFrameToImage(copy, &error);
+        av_frame_free(&copy);
+        QString path;
+        if (!image.isNull()) {
+            QDir dir(ChiakiScreenshotDirectory());
+            if (!dir.mkpath(QStringLiteral(".")))
+                error = QStringLiteral("Could not create %1").arg(dir.path());
+            else {
+                path = dir.filePath(QStringLiteral("chiaki-ng_%1.png")
+                        .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss_zzz"))));
+                if (!image.save(path, "PNG"))
+                    error = QStringLiteral("Could not write %1").arg(path);
+            }
+        }
+        if (!self)
+            return;
+        const bool ok = error.isEmpty() && !path.isEmpty();
+        QMetaObject::invokeMethod(self.data(), [self, ok, path, error]() {
+            if (!self)
+                return;
+            if (ok) {
+                qCInfo(chiakiGui) << "Saved screenshot" << path;
+                emit self->screenshotSaved(path);
+            } else {
+                qCWarning(chiakiGui) << "Screenshot failed:" << error;
+                emit self->screenshotFailed(error);
+            }
+        }, Qt::QueuedConnection);
+    });
+}
+
 bool QmlMainWindow::handleShortcut(QKeyEvent *event)
 {
     if (event->modifiers() == Qt::NoModifier) {
         switch (event->key()) {
+        case Qt::Key_F12:
+            if (session) {
+                takeScreenshot();
+                return true;
+            }
+            break;
         case Qt::Key_F11:
             if (windowState() != Qt::WindowFullScreen)
                 fullscreenTime();

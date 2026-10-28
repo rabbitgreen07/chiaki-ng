@@ -9,6 +9,7 @@
     <file>RemindDialog.qml</file>
     <file>DialogView.qml</file>
     <file>ManualHostDialog.qml</file>
+    <file>QuickSetupDialog.qml</file>
     <file>RegistDialog.qml</file>
     <file>SteamShortcutDialog.qml</file>
     <file>SettingsDialog.qml</file>

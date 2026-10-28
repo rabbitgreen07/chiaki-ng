@@ -4,6 +4,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/pixdesc.h>
 #include <math.h>
+#include <stdlib.h>
 
 static enum AVCodecID chiaki_codec_av_codec_id(ChiakiCodec codec)
 {
@@ -100,6 +101,21 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_ffmpeg_decoder_init(ChiakiFfmpegDecoder *de
 		}
 		decoder->codec_context->hw_device_ctx = av_buffer_ref(decoder->hw_device_ctx);
 		CHIAKI_LOGI(log, "Using hardware decoder \"%s\" with pix_fmt=%s", hw_decoder_name, av_get_pix_fmt_name(decoder->hw_pix_fmt));
+	}
+
+	// Low-latency decoding: AV_CODEC_FLAG_LOW_DELAY disables FFmpeg's frame
+	// threading, which otherwise buffers (thread_count - 1) frames before the
+	// first output. For streaming that is pure input lag. Slice threading keeps
+	// software decode parallel without adding delay. Set the environment variable
+	// CHIAKI_DISABLE_LOW_DELAY_DECODE=1 to restore FFmpeg defaults.
+	const char *disable_low_delay = getenv("CHIAKI_DISABLE_LOW_DELAY_DECODE");
+	if(!disable_low_delay || !*disable_low_delay || *disable_low_delay == '0')
+	{
+		decoder->codec_context->flags |= AV_CODEC_FLAG_LOW_DELAY;
+		decoder->codec_context->flags2 |= AV_CODEC_FLAG2_FAST;
+		decoder->codec_context->thread_type = FF_THREAD_SLICE;
+		decoder->codec_context->thread_count = hw_decoder_name ? 1 : 0;
+		CHIAKI_LOGI(log, "Low-latency decoding enabled (no frame threading)");
 	}
 
 	decoder->codec_context->framerate = decoder->synthetic_framerate;

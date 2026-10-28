@@ -153,6 +153,8 @@ public:
     Q_INVOKABLE void setStatsOverlayActive(bool active);
     Q_INVOKABLE void noteLoadingTransitionComplete();
     Q_INVOKABLE void presentStartupWarmupFrame(unsigned width, unsigned height, bool hdr);
+    // Saves the next decoded video frame as a PNG in <Pictures>/chiaki-ng.
+    Q_INVOKABLE void takeScreenshot();
     void armVerbosePlaceboQuietWindow();
     bool startupWarmupFrameActive() const { return startup_warmup_frame_active; }
 
@@ -182,6 +184,8 @@ signals:
     void pendingFrameAgeChanged();
     void loadingTransitionCompleteChanged();
     void statsOverlayActiveChanged();
+    void screenshotSaved(const QString &path);
+    void screenshotFailed(const QString &reason);
 
 private:
     friend class BufferedPlaybackPacerThread;
@@ -285,6 +289,8 @@ private:
     AVFrame *direct_pending_frame = nullptr;
     struct pl_frame direct_frame = {};
     QAtomicInteger<int> direct_frame_reset = 0;
+    QAtomicInteger<int> screenshot_requested = 0;
+    void captureScreenshot(const AVFrame *frame);
     uint64_t ts_start = 0;
     double queue_pts_origin = -1.0;
     double newest_queued_frame_pts = -1.0;

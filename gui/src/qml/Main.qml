@@ -186,6 +186,10 @@ Item {
         stack.push(registDialogComponent, {host: host, ps5: ps5});
     }
 
+    function showQuickSetupDialog() {
+        stack.push(quickSetupDialogComponent);
+    }
+
     function showSettingsDialog() {
         stack.push(settingsDialogComponent);
     }
@@ -585,6 +589,11 @@ Item {
     Component {
         id: manualHostDialogComponent
         ManualHostDialog { }
+    }
+
+    Component {
+        id: quickSetupDialogComponent
+        QuickSetupDialog { }
     }
 
     Component {
