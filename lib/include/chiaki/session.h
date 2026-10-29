@@ -65,10 +65,8 @@ typedef enum {
 typedef enum {
 	// values must not change
 	CHIAKI_VIDEO_FPS_PRESET_30 = 30,
-	CHIAKI_VIDEO_FPS_PRESET_60 = 60,
-	// Experimental: asks the console for 120 fps. Sony's Remote Play is only known
-	// to stream 30/60, so the console may ignore or reject this.
-	CHIAKI_VIDEO_FPS_PRESET_120 = 120
+	CHIAKI_VIDEO_FPS_PRESET_60 = 60
+	// 120 was tested: PS5 Remote Play does not support it and falls back to 30 fps.
 } ChiakiVideoFPSPreset;
 
 CHIAKI_EXPORT void chiaki_connect_video_profile_preset(ChiakiConnectVideoProfile *profile, ChiakiVideoResolutionPreset resolution, ChiakiVideoFPSPreset fps);
