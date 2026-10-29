@@ -360,6 +360,25 @@ Item {
 
                 Label {
                     Layout.alignment: Qt.AlignRight
+                    text: "fps"
+                    font.pixelSize: 18
+                    visible: Chiaki.session ? true : false
+
+                    Label {
+                        anchors {
+                            right: parent.left
+                            baseline: parent.baseline
+                            rightMargin: 5
+                        }
+                        text: parent.visible ? Chiaki.window.streamFps : ""
+                        color: Material.accent
+                        font.bold: true
+                        font.pixelSize: 28
+                    }
+                }
+
+                Label {
+                    Layout.alignment: Qt.AlignRight
                     text: "Mbps"
                     font.pixelSize: 18
                     visible: Chiaki.session ? true : false

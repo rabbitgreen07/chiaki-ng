@@ -167,6 +167,7 @@ public:
         valueFont.setPixelSize(18);
         valueFont.setBold(true);
 
+        fpsRow = makeRow(tr("fps"), QColor(QStringLiteral("#00a7ff")), titleFont, valueFont, fpsValue);
         bitrateRow = makeRow(tr("Mbps"), QColor(QStringLiteral("#00a7ff")), titleFont, valueFont, bitrateValue);
         queueRow = makeRow(tr("queue depth avg"), QColor(QStringLiteral("#90caf9")), titleFont, valueFont, queueDepthValue);
         pendingRow = makeRow(tr("pending frame age"), QColor(QStringLiteral("#90caf9")), titleFont, valueFont, pendingAgeValue);
@@ -179,6 +180,7 @@ public:
         connect(owner, &QmlMainWindow::queueDepthAverageChanged, this, &StatsOverlayWidget::refresh);
         connect(owner, &QmlMainWindow::pendingFrameAgeChanged, this, &StatsOverlayWidget::refresh);
         connect(owner, &QmlMainWindow::droppedFramesChanged, this, &StatsOverlayWidget::refresh);
+        connect(owner, &QmlMainWindow::streamFpsChanged, this, &StatsOverlayWidget::refresh);
         if (backend) {
             connect(backend, &QmlBackend::sessionChanged, this, [this](StreamSession *s) {
                 setSession(s);
@@ -244,6 +246,9 @@ public:
         StreamSession *session = current_session;
         const bool hasSession = session != nullptr;
 
+        fpsRow->setVisible(hasSession);
+        fpsValue->setText(QString::number(owner ? owner->streamFps() : 0));
+
         bitrateRow->setVisible(hasSession);
         if (hasSession)
             bitrateValue->setText(QString::number(session->GetMeasuredBitrate(), 'f', 1));
@@ -283,6 +288,8 @@ private:
     QWidget *pendingRow = nullptr;
     QWidget *packetLossRow = nullptr;
     QWidget *droppedFramesRow = nullptr;
+    QWidget *fpsRow = nullptr;
+    QLabel *fpsValue = nullptr;
     QWidget *lostFramesRow = nullptr;
     QLabel *bitrateValue = nullptr;
     QLabel *queueDepthValue = nullptr;
@@ -3012,6 +3019,9 @@ void QmlMainWindow::presentFrame(ChiakiFfmpegFrame frame, int32_t frames_lost, q
     if (!frame.frame)
         return;
 
+    if (!startup_warmup_frame_active)
+        stream_frames_current.fetchAndAddRelaxed(1);
+
     if (screenshot_requested.loadRelaxed() && screenshot_requested.testAndSetOrdered(1, 0))
         captureScreenshot(frame.frame);
 
@@ -5257,6 +5267,14 @@ renderer_backend_ready:
         if (dropped_frames != dropped_frames_next) {
             dropped_frames = dropped_frames_next;
             emit droppedFramesChanged();
+        }
+        // Frames that arrived from the console in the last second
+        int stream_fps_next = session ? stream_frames_current.fetchAndStoreRelaxed(0) : 0;
+        if (!session)
+            stream_frames_current.storeRelaxed(0);
+        if (stream_fps != stream_fps_next) {
+            stream_fps = stream_fps_next;
+            emit streamFpsChanged();
         }
     });
 

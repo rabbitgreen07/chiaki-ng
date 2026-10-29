@@ -58,6 +58,7 @@ class QmlMainWindow : public QWindow
     Q_OBJECT
     Q_PROPERTY(bool hasVideo READ hasVideo NOTIFY hasVideoChanged)
     Q_PROPERTY(int droppedFrames READ droppedFrames NOTIFY droppedFramesChanged)
+    Q_PROPERTY(int streamFps READ streamFps NOTIFY streamFpsChanged)
     Q_PROPERTY(bool keepVideo READ keepVideo WRITE setKeepVideo NOTIFY keepVideoChanged)
     Q_PROPERTY(bool loadingTransitionComplete READ loadingTransitionComplete NOTIFY loadingTransitionCompleteChanged)
     Q_PROPERTY(VideoMode videoMode READ videoMode WRITE setVideoMode NOTIFY videoModeChanged)
@@ -110,6 +111,7 @@ public:
 
     bool hasVideo() const;
     int droppedFrames() const;
+    int streamFps() const { return stream_fps; }
     void increaseDroppedFrames();
 
     bool directStream() const;
@@ -174,6 +176,7 @@ public slots:
 signals:
     void hasVideoChanged();
     void droppedFramesChanged();
+    void streamFpsChanged();
     void keepVideoChanged();
     void videoModeChanged();
     void zoomFactorChanged();
@@ -315,6 +318,8 @@ private:
     bool is_window_adjustable = false;
     bool is_stream_window_adjustable = false;
     QAtomicInteger<int> dropped_frames_current = 0;
+    int stream_fps = 0;
+    QAtomicInteger<int> stream_frames_current = 0;
     bool going_full = false;
     VideoMode video_mode = VideoMode::Normal;
     float zoom_factor = 0;

@@ -52,3 +52,14 @@ The simplest route is GitHub Actions; you don't need a local toolchain.
    or copying the changed files over.
 3. Push. Then in your fork open **Actions → "Build chiaki-ng Windows x86_64 (VC)" → Run workflow**.
 4. When the run finishes, download **chiaki-ng-win_x64-VC-Release** (portable folder with `chiaki.exe`) or **chiaki-ng-win_x64-VC-installer.zip** from the run page. Artifacts are kept for 7 days.
+
+## 4. Experimental 120 fps + stream FPS counter
+
+- Settings → Video (PS5): the FPS dropdowns have a third option, **120 fps (Experimental)**.
+  Chiaki then asks the PS5 for 120 fps when the stream starts. Sony's Remote Play is only known
+  to stream 30/60 fps, so the console may ignore the request (you still get 60) or refuse the
+  connection. If it refuses, switch back to 60 fps.
+- The in-game stats overlay (Settings → Audio/Wifi → Show Stream Stats During Gameplay) now shows
+  **fps**: the number of video frames actually received from the console each second.
+  That number tells you whether 120 fps worked.
+- The log records the requested rate ("Requesting 1920x1080 @ 120 fps from console").
